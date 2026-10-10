@@ -1,0 +1,23 @@
+{
+  "title": "College ERP Student Predictions",
+  "uid": "college-erp-api",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Predictions per minute",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "sum(rate(college_erp_predictions_total[1m])) * 60", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "title": "Prediction latency (p95)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(college_erp_prediction_seconds_bucket[5m])) by (le))", "refId": "A" }]
+    }
+  ]
+}

@@ -11,23 +11,19 @@ REQUESTS = Counter("college_erp_predictions_total", "Student score prediction re
 LATENCY = Histogram("college_erp_prediction_seconds", "Student score prediction endpoint latency")
 MODEL = None
 
-
 def load_model():
     global MODEL
     if MODEL is None:
-        MODEL = mlflow.pyfunc.load_model("models:/StudentPerformancePredictor/1")
+        MODEL = mlflow.pyfunc.load_model("/mlflow/student_model")
     return MODEL
-
 
 @app.get("/health")
 def health():
     return jsonify(status="ok")
 
-
 @app.get("/metrics")
 def metrics():
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
-
 
 @app.post("/predict")
 @LATENCY.time()
@@ -42,13 +38,12 @@ def predict():
         absences = float(values["absences"])
         if not 0 <= attendance <= 100 or not 0 <= study_hours <= 40 or not 0 <= absences <= 60:
             raise ValueError
-        prediction = float(load_model().predict([[attendance, study_hours, absences]])[0])
     except (KeyError, TypeError, ValueError):
         REQUESTS.labels(result="invalid").inc()
         return jsonify(error="attendance_percent must be 0-100, study_hours_week 0-40 and absences 0-60"), 400
+    prediction = float(load_model().predict([[attendance, study_hours, absences]])[0])
     REQUESTS.labels(result="success").inc()
     return jsonify(predicted_score=round(min(100, max(0, prediction)), 1))
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)

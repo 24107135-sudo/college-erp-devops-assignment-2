@@ -6,8 +6,7 @@ services:
       sh -c "pip install --no-cache-dir mlflow==2.17.2 'numpy<2' 'SQLAlchemy<2.1' &&
       mlflow server --host 0.0.0.0 --port 5000
       --backend-store-uri sqlite:////mlflow/mlflow.db
-      --default-artifact-root mlflow-artifacts:/
-      --artifacts-destination /mlflow/artifacts --serve-artifacts"
+      --default-artifact-root file:///mlflow/artifacts"
     ports:
       - "5000:5000"
     volumes:
@@ -23,6 +22,8 @@ services:
     command: ["python", "train_model.py"]
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - mlflow-data:/mlflow
     depends_on:
       mlflow:
         condition: service_healthy
@@ -32,6 +33,8 @@ services:
     build: .
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - mlflow-data:/mlflow
     ports:
       - "8000:8000"
     depends_on:

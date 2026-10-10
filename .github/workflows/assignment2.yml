@@ -1,0 +1,43 @@
+name: Assignment 2 College ERP Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  compose-test-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+      - name: Build application containers
+        run: docker compose build
+      - name: Test College ERP API
+        run: docker compose run --rm app python -m unittest -v test_api
+      - name: Train and register ML model
+        run: |
+          docker compose up -d mlflow
+          docker compose --profile train run --rm trainer
+      - name: Deploy monitoring stack and smoke-test API
+        run: |
+          docker compose up -d app prometheus grafana
+          for attempt in $(seq 1 30); do
+            if curl --fail http://localhost:8000/health; then break; fi
+            sleep 2
+          done
+          curl --fail http://localhost:8000/health
+          curl --fail -X POST http://localhost:8000/predict \
+            -H 'Content-Type: application/json' \
+            -d '{"attendance_percent":85,"study_hours_week":12,"absences":2}'
+          curl --fail http://localhost:8000/metrics | grep college_erp_predictions_total
+          curl --fail http://localhost:9090/-/healthy
+          curl --fail http://localhost:3000/api/health
+      - name: Stop Compose stack
+        if: always()
+        run: docker compose down --volumes

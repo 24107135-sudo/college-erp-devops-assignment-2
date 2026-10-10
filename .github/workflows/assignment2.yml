@@ -41,7 +41,10 @@ jobs:
           curl --fail http://localhost:8000/health
           curl --fail -X POST http://localhost:8000/predict \
             -H 'Content-Type: application/json' \
-            -d '{"attendance_percent":85,"study_hours_week":12,"absences":2}'
+            -d '{"attendance_percent":85,"study_hours_week":12,"absences":2}' || {
+              docker compose logs app mlflow
+              exit 1
+            }
           curl --fail http://localhost:8000/metrics | grep college_erp_predictions_total
           curl --fail http://localhost:9090/-/healthy
           curl --fail http://localhost:3000/api/health

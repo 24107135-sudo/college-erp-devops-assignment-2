@@ -19,11 +19,18 @@ jobs:
       - name: Build application containers
         run: docker compose build
       - name: Test College ERP API
-        run: docker compose run --rm app python -m unittest -v test_api
-      - name: Train and register ML model
+        run: docker compose run --no-deps --rm app python -m unittest -v test_api
+      - name: Start MLflow tracking server
         run: |
           docker compose up -d mlflow
-          docker compose --profile train run --rm trainer
+          for attempt in $(seq 1 60); do
+            if curl --fail http://localhost:5000/health; then exit 0; fi
+            sleep 3
+          done
+          docker compose logs mlflow
+          exit 1
+      - name: Train and register ML model
+        run: docker compose --profile train run --rm trainer
       - name: Deploy monitoring stack and smoke-test API
         run: |
           docker compose up -d app prometheus grafana

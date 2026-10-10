@@ -41,4 +41,5 @@ with mlflow.start_run(run_name="linear-regression-baseline"):
         signature=infer_signature(train_x, model.predict(train_x)),
         input_example=[[85, 12, 2]],
     )
+    mlflow.sklearn.save_model(model, path="/mlflow/student_model")
     print("Trained, tracked, and registered StudentPerformancePredictor model.")
